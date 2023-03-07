@@ -174,3 +174,4 @@ while(isActive):
     drawResult()
     pygame.display.update()
     clock.tick(400)
+    .

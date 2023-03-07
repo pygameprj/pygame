@@ -46,7 +46,7 @@ class Direction(object):
     def __init__(self):
         self.pos = None
         self.direction = 0
-        self.image = pygame.image.load(f"py\direction.png")
+        self.image = pygame.image.load(f"image\direction.png")
         self.image = pygame.transform.scale(self.image, (60, 60))
         self.rotated_image = pygame.transform.rotate(self.image, 0)
         self.y = -1
@@ -151,7 +151,7 @@ Directions = [Direction() for i in range(0, 10)]
 #타겟 박스
 targetArea = Rect(SCREEN_WIDTH/2, 400, SCREEN_WIDTH/2, 80)
 #결과 이모티콘
-resultFileNames = ["py\gnormal.png", "py\good.png", "py\gbad.png"]
+resultFileNames = ["image\gnormal.png", "image\good.png", "image\gbad.png"]
 resultImg = []
 for i, name in enumerate(resultFileNames):
     resultImg.append(pygame.image.load(name))

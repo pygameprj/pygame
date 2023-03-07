@@ -5,7 +5,7 @@ SCREEN_WIDTH = 1080 #가로
 SCREEN_HEIGHT = 720 #세로
 R = 10  #반지름
 STATE = 0 #이전 상태
-
+#홍의민 흔적
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0,255, 0)

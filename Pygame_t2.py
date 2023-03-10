@@ -2,11 +2,20 @@
 # Clone coding
 import pygame
 import random
+import threading
 
 #전역 변수
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0,255, 0)
+
+#objSize
+playerSizeX = 80
+playerSizeY = 100
+misileSizeX = 15
+misileSizeY = 20
+obsSizeX = 50
+obsSizeY = 50
 
 SCREEN_WIDTH = 400 #가로
 SCREEN_HEIGHT = 900 #세로
@@ -33,9 +42,52 @@ class obj:
     def show(self):
         screen.blit(self.img, (self.x, self.y))
 
+def UPObjf(obj_list):
+    for i in range(len(obj_list)):
+        obj = obj_list[i]
+        obj.y -= obj.move
+
+def DOWNObjf(obj_list):
+    for i in range(len(obj_list)):
+        obj = obj_list[i]
+        obj.y += obj.move
+
+#오브젝트 삭제
+def delObjf(obj_list):
+    delobs_list = []
+    for i in range(len(obj_list)):
+        obj = obj_list[i]
+        if obj.y - obj.move <= 0 or obj.y + obj.move >= SCREEN_HEIGHT: 
+            delobs_list.append(i)
+
+    for delObj in list(set(delobs_list)):
+        del obj_list[delObj]
+
+def ifHitf(m_list, obs_list): #미사일과 오브젝트 충돌하면 파괴
+    lock = threading.Lock()
+    lock.acquire()
+    TF = False
+    delobs_list = []
+    delM_list = []
+
+    for i in range(len(m_list)):
+        for j in range(len(obs_list)):
+            if m_list[i].x - obsSizeX <= obs_list[j].x and m_list[i].x >= obs_list[j].x and m_list[i].y - obsSizeY <= obs_list[j].y:
+                delobs_list.append(j)
+                delM_list.append(i)
+                TF =  True
+
+    for delobsObj in delobs_list:
+        del obs_list[delobsObj]
+    for delMObj in delM_list:
+        del m_list[delMObj]
+    lock.release()
+    return TF
+
 def main():
     # 1. 게임 초기화
     pygame.init()
+    lock = threading.Lock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # 2. 게임창 옵션 설정
@@ -46,10 +98,11 @@ def main():
     # 3. 게임내 필요한 설정
     clock = pygame.time.Clock()
     count = 0 #미사일 지연
+    obsCount = 0 #장애물 삭제 갯수
 
     player = obj()  # SpaceShip
     player.put_img("image\good.png")
-    player.change_size(80, 100)
+    player.change_size(playerSizeX, playerSizeY)
 
     player.x = round(SCREEN_WIDTH / 2 - player.sx / 2)
     player.y = SCREEN_HEIGHT - player.sy - 15
@@ -81,52 +134,42 @@ def main():
                 player.x = SCREEN_WIDTH - player.sx
 
         if key_event[pygame.K_SPACE] and count % 6 == 0:
+            lock.acquire()
             count = 0
             misile = obj()  # misile
             misile.put_img("image\gbad.png")
-            misile.change_size(15, 20)
-
+            misile.change_size(misileSizeX, misileSizeY)
             misile.x = round(player.x + player.sx / 2 - misile.sx / 2)
             misile.y = player.y - misile.y - 10
             misile.move = 15
             misile_list.append(misile)
+            lock.release()
+        print(count)
         count += 1
 
-        #오브젝트 삭제
-        delObj_list = []
-        for i in range(len(misile_list)):
-            misile = misile_list[i]
-            misile.y -= misile.move
-
-            if misile.y <= -misile.sy:
-                delObj_list.append(i)
-        
-        for delObj in delObj_list:
-            del misile_list[delObj]
-
         # 랜덤하게 생성 되는 장애물
-        if random.random() > 0.98:
+        if random.random() > 0.95:
+            lock.acquire()
             obstacle = obj()  # devil
             obstacle.put_img("image\direction.png")
-            obstacle.change_size(50, 50)
-
+            obstacle.change_size(obsSizeX, obsSizeY)
             obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx - round(player.sx / 2))
             obstacle.y = 10
             obstacle.move = 1
-
             obstacle_list.append(obstacle)
-            
-        # 장애물 삭제 되는 부분
-        delObj_list = []
-        for i in range(len(obstacle_list)):
-            obstacle = obstacle_list[i]
-            obstacle.y += obstacle.move
+            lock.release()
 
-            if obstacle.y >= SCREEN_HEIGHT:
-                delObj_list.append(i)
-        
-        for delObj in delObj_list:
-            del obstacle_list[delObj]
+        #move obj
+        UPObjf(misile_list)
+        DOWNObjf(obstacle_list)
+    
+        #del obj
+        if len(misile_list): delObjf(misile_list)
+        if len(obstacle_list): delObjf(obstacle_list)
+
+        #오브젝트 파괴
+        if ifHitf(misile_list, obstacle_list): obsCount += 1
+        # print("obs del count: ",obsCount)
 
         # 4-4, 그리기       
         screen.fill(BLACK)

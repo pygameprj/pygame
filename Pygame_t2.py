@@ -10,6 +10,7 @@ WHITE = (255, 255, 255)
 GREEN = (0,255, 0)
 RED = (255, 0, 0)
 M_PER = 3 # 미사일 생성 확률 퍼센트
+
 player_HP = 10
 player_SPEED = 7
 missile_SPEED = 15
@@ -54,7 +55,7 @@ class obj:
         screen.blit(self.img, (self.x, self.y))
 
 def initPlayer(player):
-    player.put_img("C:\coding\pygame\image\gfigter.png")
+    player.put_img("image\gfigter.png")
     player.change_size(playerSizeX, playerSizeY)
     player.x = round((SCREEN_WIDTH - player.sx)/2)
     player.y = SCREEN_HEIGHT - player.sy - 15
@@ -63,7 +64,7 @@ def initPlayer(player):
 
 def newMissile(m_list, m_STR, player):
     missile = obj()  # missile
-    missile.put_img("C:\coding\pygame\image\missile.png")
+    missile.put_img("image\missile.png")
     missile.change_size(missileSizeX, missileSizeY)
     missile.x = round(player.x + player.sx/2 - missile.sx/2)
     missile.y = player.y - missile.y
@@ -74,7 +75,7 @@ def newMissile(m_list, m_STR, player):
 def newobs(obs_list):
     if random.random() < M_PER/100:
         obstacle = obj()  # devil
-        obstacle.put_img("C:\coding\pygame\image\devil.png")
+        obstacle.put_img("image\devil.png")
         obstacle.change_size(obsSizeX, obsSizeY)
         obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx)
         obstacle.y = 10 + 40
@@ -86,7 +87,7 @@ def makeBoom(boom_list, obj_list, delObj_list):
     for i in range(len(delObj_list)):
         obj_list[delObj_list[i]]
         boom = obj()
-        boom.put_img("C:\coding\pygame\image\explosion.png")
+        boom.put_img("image\explosion.png")
         boom.change_size(boomX, boomY)
         boom.x = obj_list[delObj_list[i]].x
         boom.y = obj_list[delObj_list[i]].y

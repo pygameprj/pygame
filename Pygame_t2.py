@@ -7,20 +7,22 @@ import random
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0,255, 0)
-M_PER = 10 # 미사일 생성 확률 퍼센트
+M_PER = 3 # 미사일 생성 확률 퍼센트
 player_HP = 100
 player_SPEED = 7
-misile_SPEED = 15
-obs_HP = 5
-obs_SPEED = 1
+missile_SPEED = 15
+obs_HP = 4
+obs_SPEED = 2
 
 #objSize
 playerSizeX = 80
 playerSizeY = 100
-misileSizeX = 15
-misileSizeY = 20
+missileSizeX = 15
+missileSizeY = 20
 obsSizeX = 50
 obsSizeY = 50
+boomX = 50
+boomY = 50
 
 SCREEN_WIDTH = 400 #가로
 SCREEN_HEIGHT = 900 #세로
@@ -50,33 +52,43 @@ class obj:
         screen.blit(self.img, (self.x, self.y))
 
 def initPlayer(player):
-    player.put_img("image\good.png")
+    player.put_img("image\gfigter.png")
     player.change_size(playerSizeX, playerSizeY)
     player.x = round((SCREEN_WIDTH - player.sx)/2)
     player.y = SCREEN_HEIGHT - player.sy - 15
     player.move = player_SPEED
     player.HP = player_HP
 
-def newMisile(m_list, m_STR, player):
-    misile = obj()  # misile
-    misile.put_img("image\gbad.png")
-    misile.change_size(misileSizeX, misileSizeY)
-    misile.x = round(player.x + player.sx/2 - misile.sx/2)
-    misile.y = player.y - misile.y
-    misile.move = misile_SPEED
-    misile.STR = m_STR
-    m_list.append(misile)
+def newMissile(m_list, m_STR, player):
+    missile = obj()  # missile
+    missile.put_img("image\missile.png")
+    missile.change_size(missileSizeX, missileSizeY)
+    missile.x = round(player.x + player.sx/2 - missile.sx/2)
+    missile.y = player.y - missile.y
+    missile.move = missile_SPEED
+    missile.STR = m_STR
+    m_list.append(missile)
 
 def newobs(obs_list):
     if random.random() < M_PER/100:
         obstacle = obj()  # devil
-        obstacle.put_img("image\direction.png")
+        obstacle.put_img("image\devil.png")
         obstacle.change_size(obsSizeX, obsSizeY)
         obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx)
-        obstacle.y = 10
+        obstacle.y = 10 + 40
         obstacle.move = obs_SPEED
         obstacle.HP = obs_HP
         obs_list.append(obstacle)
+
+def makeBoom(boom_list, obj_list, delObj_list):
+    for i in range(len(delObj_list)):
+        obj_list[delObj_list[i]]
+        boom = obj()
+        boom.put_img("image\explosion.png")
+        boom.change_size(boomX, boomY)
+        boom.x = obj_list[delObj_list[i]].x
+        boom.y = obj_list[delObj_list[i]].y
+        boom_list.append(boom)
 
 #충돌여부
 def oLap(obj1, obj2):
@@ -103,18 +115,24 @@ def delObjf(obj_list, delObj_list):
         reversed_delObj_list = delObj_list[::-1]    #역순으로 읽어야 버그 안 터짐
         for delObj in reversed_delObj_list:
             del obj_list[delObj]
+            
 
 #오브젝트가 나가면 삭제
 def outOfObj(obj_list):
+    count = 0
     delObj_list = []
     if len(obj_list):
         for i in range(len(obj_list)):
-            if obj_list[i].y < 0 or obj_list[i].y + obj_list[i].sy > SCREEN_HEIGHT: 
+            if obj_list[i].y < 0:
                 delObj_list.append(i)
+            if obj_list[i].y + obj_list[i].sy > SCREEN_HEIGHT: 
+                delObj_list.append(i)
+                count += 1 
     delObjf(obj_list, delObj_list)
+    return count
 
 #충돌
-def hitObs(m_list, obs_list):
+def hitObs(m_list, obs_list, boom_list):
     TF = False
     delObs_list = []; delM_list = []
 
@@ -125,9 +143,12 @@ def hitObs(m_list, obs_list):
                 if  m_list[i].HP <= 0 and i not in delM_list: delM_list.append(i) 
                 if obs_list[j].HP <= 0 and j not in delObs_list: delObs_list.append(j)
                 TF = True
-
+    makeBoom(boom_list, obs_list, delObs_list)
+    global obsCount
+    obsCount += len(delObs_list)
     delObjf(obs_list, delObs_list)
     delObjf(m_list, delM_list)
+    
     return TF
 
 def hitPlayer(player, obs_list):
@@ -141,36 +162,45 @@ def hitPlayer(player, obs_list):
     return TF
 
 #그리기 함수
-def drawf(screen, player, m_list, obs_list):
+def drawf(screen, player, m_list, obs_list, boom_list):
     screen.fill(BLACK)
     player.show()
 
-    for misile in m_list:
-        misile.show()
+    for missile in m_list:
+        missile.show()
     for obstacle in obs_list: 
         obstacle.show()
-
+    for boom in boom_list:
+        boom.show()
+    delObjf(boom_list, [i for i in range(len(boom_list))])
 #게임 오버
 def ifGameOver(player):
     if player.HP <= 0:
         print("player HP is 0 \n GAME OVER!")
         exit(0)
 
+def writeScore(screen, count, message, fontX, fontY, color = WHITE):
+    font = pygame.font.SysFont('나눔고딕', 20)
+    text = font.render(message + ": "+ str(count), True, color)
+    screen.blit(text,(fontX,fontY))
+
 def main():
     # 1. 게임 초기화
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    global obsCount
 
     # 2. 게임창 옵션 설정
     title = "My Game"
     pygame.display.set_caption(title)
 
     # 3. 게임내 필요한 설정
-    misile_list = []; obstacle_list = []
+    missile_list = []; obstacle_list = []; boom_list = []
     clock = pygame.time.Clock()
     count = 0 #미사일 지연
+    damageAmount = 0 #총 딜량
     obsCount = 0 #장애물 삭제 갯수
-    misile_STR = 1 #미사일 공격력
+    missile_STR = 1 #미사일 공격력
 
     player = obj()  # SpaceShip
     initPlayer(player) #플래이어 상태 초기화
@@ -200,7 +230,7 @@ def main():
 
         #스패이스바 입력시 미사일 생성
         if key_event[pygame.K_SPACE] and count % 6 == 0:
-            newMisile(misile_list, misile_STR, player)
+            newMissile(missile_list, missile_STR, player)
             count = 0
         count += 1
 
@@ -208,21 +238,24 @@ def main():
         newobs(obstacle_list)
 
         #move obj
-        UPObjf(misile_list)
+        UPObjf(missile_list)
         DOWNObjf(obstacle_list)
     
         #del obj 
-        outOfObj(misile_list)
-        outOfObj(obstacle_list)
+        outOfObj(missile_list)
+        player.HP -= outOfObj(obstacle_list)
 
         #충돌시 오브젝트 파괴
-        if hitObs(misile_list, obstacle_list): obsCount += 1
+        if hitObs(missile_list, obstacle_list, boom_list):  damageAmount += 1
         #플래이어 체력 감소
         if hitPlayer(player, obstacle_list): player.HP -= 1
         # print("obs del count: ",obsCount)
 
         # 4-4, 그리기 
-        drawf(screen, player, misile_list, obstacle_list)      
+        drawf(screen, player, missile_list, obstacle_list, boom_list)
+        writeScore(screen, damageAmount, "총 딜량", 10, 0)
+        writeScore(screen, obsCount, "처리한 악마 수", 10, 20)
+        writeScore(screen, player.HP, "player HP", SCREEN_WIDTH-150, 00, GREEN)
 
         # 4-5, 업데이트
         pygame.display.flip()

@@ -2,7 +2,6 @@
 # Clone coding
 import pygame
 import random
-import threading
 
 #전역 변수
 BLACK = (0, 0, 0)
@@ -27,6 +26,7 @@ class obj:
         self.x = 0
         self.y = 0
         self.move = 0
+        self.HP = 1
 
     def put_img(self, address):
         if address[-3:] == "png":
@@ -63,31 +63,32 @@ def delObjf(obj_list):
     for delObj in list(set(delobs_list)):
         del obj_list[delObj]
 
-def ifHitf(m_list, obs_list): #미사일과 오브젝트 충돌하면 파괴
-    lock = threading.Lock()
-    lock.acquire()
-    TF = False
+#미사일과 오브젝트 충돌하면 파괴
+def ifHitf(m_list, obs_list):
+    TF = False  #츙돌 유무 판별
     delobs_list = []
     delM_list = []
 
     for i in range(len(m_list)):
         for j in range(len(obs_list)):
             if m_list[i].x - obsSizeX <= obs_list[j].x and m_list[i].x >= obs_list[j].x and m_list[i].y - obsSizeY <= obs_list[j].y:
-                delobs_list.append(j)
-                delM_list.append(i)
+                m_list[i].HP -= 1; obs_list[j].HP -= 1
+
+                if  m_list[i].HP <= 0 and i not in delM_list: delM_list.append(i) 
+                if obs_list[j].HP <= 0 and j not in delobs_list: delobs_list.append(j)
                 TF =  True
 
-    for delobsObj in delobs_list:
-        del obs_list[delobsObj]
-    for delMObj in delM_list:
-        del m_list[delMObj]
-    lock.release()
+    if len(delobs_list):
+        for delobsObj in delobs_list:
+            del obs_list[delobsObj]
+    if len(m_list):
+        for delMObj in delM_list:
+            del m_list[delMObj]
     return TF
 
 def main():
     # 1. 게임 초기화
     pygame.init()
-    lock = threading.Lock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # 2. 게임창 옵션 설정
@@ -104,7 +105,7 @@ def main():
     player.put_img("image\good.png")
     player.change_size(playerSizeX, playerSizeY)
 
-    player.x = round(SCREEN_WIDTH / 2 - player.sx / 2)
+    player.x = round((SCREEN_WIDTH - player.sx)/2)
     player.y = SCREEN_HEIGHT - player.sy - 15
 
     player.move = 7
@@ -133,31 +134,28 @@ def main():
             if player.x >= SCREEN_WIDTH - player.sx:
                 player.x = SCREEN_WIDTH - player.sx
 
+        #스패이스바 입력시 미사일 생성
         if key_event[pygame.K_SPACE] and count % 6 == 0:
-            lock.acquire()
             count = 0
             misile = obj()  # misile
             misile.put_img("image\gbad.png")
             misile.change_size(misileSizeX, misileSizeY)
-            misile.x = round(player.x + player.sx / 2 - misile.sx / 2)
+            misile.x = round(player.x + player.sx/2 - misile.sx/2)
             misile.y = player.y - misile.y - 10
             misile.move = 15
             misile_list.append(misile)
-            lock.release()
-        print(count)
         count += 1
 
         # 랜덤하게 생성 되는 장애물
         if random.random() > 0.95:
-            lock.acquire()
             obstacle = obj()  # devil
             obstacle.put_img("image\direction.png")
             obstacle.change_size(obsSizeX, obsSizeY)
             obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx - round(player.sx / 2))
             obstacle.y = 10
             obstacle.move = 1
+            obstacle.HP = 3
             obstacle_list.append(obstacle)
-            lock.release()
 
         #move obj
         UPObjf(misile_list)

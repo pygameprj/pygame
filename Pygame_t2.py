@@ -10,6 +10,7 @@ WHITE = (255, 255, 255)
 GREEN = (0,255, 0)
 RED = (255, 0, 0)
 M_PER = 3 # 미사일 생성 확률 퍼센트
+addressTF = 1 # 상대경로는 0, 절대 경로는 1
 
 #파일 경로
 playerFile = ["image\gfigter.png", "C:\code\pygame\image\gfigter.png"]
@@ -67,7 +68,7 @@ class obj:
         screen.blit(self.img, (self.x, self.y))
 
 def initPlayer(player):
-    player.put_img(playerFile[1])
+    player.put_img(playerFile[addressTF])
     player.change_size(playerSizeX, playerSizeY)
     player.x = round((SCREEN_WIDTH - player.sx)/2)
     player.y = SCREEN_HEIGHT - player.sy - 15
@@ -76,7 +77,7 @@ def initPlayer(player):
 
 def newMissile(m_list, m_STR, player):
     missile = obj()  # missile
-    missile.put_img(missileFile[1])
+    missile.put_img(missileFile[addressTF])
     missile.change_size(missileSizeX, missileSizeY)
     missile.x = round(player.x + player.sx/2 - missile.sx/2)
     missile.y = player.y - missile.y
@@ -87,7 +88,7 @@ def newMissile(m_list, m_STR, player):
 def newobs(obs_list):
     if random.random() < M_PER/100:
         obstacle = obj()  # devil
-        obstacle.put_img(obsFile[1])
+        obstacle.put_img(obsFile[addressTF])
         obstacle.change_size(obsSizeX, obsSizeY)
         obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx)
         obstacle.y = 10 + 40
@@ -99,13 +100,13 @@ def makeBoom(boom_list, obj_list, delObj_list):
     for i in range(len(delObj_list)):
         obj_list[delObj_list[i]]
         boom = obj()
-        boom.put_img(boomFile[1])
+        boom.put_img(boomFile[addressTF])
         boom.change_size(boomX, boomY)
         boom.x = obj_list[delObj_list[i]].x
         boom.y = obj_list[delObj_list[i]].y
         boom_list.append(boom)
         # pygame.mixer.music.stop()
-        pygame.mixer.Sound(boomSoundFile[1]).play()
+        pygame.mixer.Sound(boomSoundFile[addressTF]).play()
         # pygame.mixer.music.play(-1)
 
 #충돌여부
@@ -198,7 +199,7 @@ def drawf(screen, player, m_list, obs_list, boom_list):
 #게임 오버
 def ifGameOver(screen, player):
     if player.HP <= 0:
-        font = pygame.font.Font(fontFile[1], 40)
+        font = pygame.font.Font(fontFile[addressTF], 40)
         text = font.render("GAME OVER!", True, RED)
         screen.blit(text,(80, SCREEN_HEIGHT/2))
         pygame.mixer.music.stop()
@@ -207,7 +208,7 @@ def ifGameOver(screen, player):
     return False
       
 def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 20):
-    font = pygame.font.Font(fontFile[1], 20)
+    font = pygame.font.Font(fontFile[addressTF], 20)
     if count != -1: text = font.render(message + ": "+ str(count), True, color)
     else: text = font.render(message, True, color)
     screen.blit(text,(fontX,fontY))

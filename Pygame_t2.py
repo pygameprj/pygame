@@ -179,14 +179,14 @@ def drawf(screen, player, m_list, obs_list, boom_list):
 #게임 오버
 def ifGameOver(screen, player):
     if player.HP <= 0:
-        font = pygame.font.SysFont('나눔고딕', 40)
+        font = pygame.font.Font('font\KOTRA_GOTHIC.ttf', 40)
         text = font.render("GAME OVER!", True, RED)
         screen.blit(text,(80, SCREEN_HEIGHT/2))
         return True
     return False
       
 def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 20):
-    font = pygame.font.SysFont('나눔고딕', size)
+    font = pygame.font.Font('font\KOTRA_GOTHIC.ttf', size)
     if count != -1: text = font.render(message + ": "+ str(count), True, color)
     else: text = font.render(message, True, color)
     screen.blit(text,(fontX,fontY))

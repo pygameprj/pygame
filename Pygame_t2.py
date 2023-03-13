@@ -127,7 +127,7 @@ def DOWNObjf(obj_list):
         obj.y += obj.move
 
 def downHP(player):
-    pygame.mixer.Sound(downHPSound[1]).play()
+    pygame.mixer.Sound(downHPSound[addressTF]).play()
     player.HP -= 1
 
 #오브젝트 삭제
@@ -197,9 +197,9 @@ def drawf(screen, player, m_list, obs_list, boom_list):
         boom.show()
     delObjf(boom_list, [i for i in range(len(boom_list))])
 #게임 오버
-def ifGameOver(screen, player):
+def ifGameOver(screen, player, size = 40):
     if player.HP <= 0:
-        font = pygame.font.Font(fontFile[addressTF], 40)
+        font = pygame.font.Font(fontFile[addressTF], size)
         text = font.render("GAME OVER!", True, RED)
         screen.blit(text,(80, SCREEN_HEIGHT/2))
         pygame.mixer.music.stop()
@@ -208,7 +208,7 @@ def ifGameOver(screen, player):
     return False
       
 def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 20):
-    font = pygame.font.Font(fontFile[addressTF], 20)
+    font = pygame.font.Font(fontFile[addressTF], size)
     if count != -1: text = font.render(message + ": "+ str(count), True, color)
     else: text = font.render(message, True, color)
     screen.blit(text,(fontX,fontY))
@@ -216,9 +216,9 @@ def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 
 def main():
     # 1. 게임 초기화
     pygame.init()
-    pygame.mixer.music.load(happythemeBGM[1])
+    pygame.mixer.music.load(happythemeBGM[addressTF])
     pygame.mixer.music.play(-1)
-    missile_Sound = pygame.mixer.Sound(laserGunSound[1])
+    missile_Sound = pygame.mixer.Sound(laserGunSound[addressTF])
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     global obsCount
 

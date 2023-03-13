@@ -11,6 +11,18 @@ GREEN = (0,255, 0)
 RED = (255, 0, 0)
 M_PER = 3 # 미사일 생성 확률 퍼센트
 
+#파일 경로
+playerFile = ["image\gfigter.png", "C:\code\pygame\image\gfigter.png"]
+missileFile = ["image\missile.png", "C:\code\pygame\image\missile.png"]
+obsFile = ["image\devil.png", "C:\code\pygame\image\devil.png"]
+boomFile = ["image\explosion.png", "C:\code\pygame\image\explosion.png"]
+boomSoundFile = ["sound\death_devil.mp3", "C:\code\pygame\sound\death_devil.mp3"]
+fontFile = ['font\KOTRA_GOTHIC.ttf', 'C:\code\pygame\_font\KOTRA_GOTHIC.ttf']
+happythemeBGM = ["sound\happythemeBGM.mp3", "C:\code\pygame\sound\happythemeBGM.mp3"]
+laserGunSound = ["sound\laserGun.mp3", "C:\code\pygame\sound\laserGun.mp3"]
+gameOverSound = ["sound\gameOver.mp3", "C:\code\pygame\sound\gameOver.mp3"]
+downHPSound = ["sound\downHP.mp3", "C:\code\pygame\sound\downHP.mp3"]
+
 player_HP = 10
 player_SPEED = 7
 missile_SPEED = 15
@@ -55,7 +67,7 @@ class obj:
         screen.blit(self.img, (self.x, self.y))
 
 def initPlayer(player):
-    player.put_img("image\gfigter.png")
+    player.put_img(playerFile[1])
     player.change_size(playerSizeX, playerSizeY)
     player.x = round((SCREEN_WIDTH - player.sx)/2)
     player.y = SCREEN_HEIGHT - player.sy - 15
@@ -64,7 +76,7 @@ def initPlayer(player):
 
 def newMissile(m_list, m_STR, player):
     missile = obj()  # missile
-    missile.put_img("image\missile.png")
+    missile.put_img(missileFile[1])
     missile.change_size(missileSizeX, missileSizeY)
     missile.x = round(player.x + player.sx/2 - missile.sx/2)
     missile.y = player.y - missile.y
@@ -75,7 +87,7 @@ def newMissile(m_list, m_STR, player):
 def newobs(obs_list):
     if random.random() < M_PER/100:
         obstacle = obj()  # devil
-        obstacle.put_img("image\devil.png")
+        obstacle.put_img(obsFile[1])
         obstacle.change_size(obsSizeX, obsSizeY)
         obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx)
         obstacle.y = 10 + 40
@@ -87,11 +99,14 @@ def makeBoom(boom_list, obj_list, delObj_list):
     for i in range(len(delObj_list)):
         obj_list[delObj_list[i]]
         boom = obj()
-        boom.put_img("image\explosion.png")
+        boom.put_img(boomFile[1])
         boom.change_size(boomX, boomY)
         boom.x = obj_list[delObj_list[i]].x
         boom.y = obj_list[delObj_list[i]].y
         boom_list.append(boom)
+        # pygame.mixer.music.stop()
+        pygame.mixer.Sound(boomSoundFile[1]).play()
+        # pygame.mixer.music.play(-1)
 
 #충돌여부
 def oLap(obj1, obj2):
@@ -110,6 +125,10 @@ def DOWNObjf(obj_list):
         obj = obj_list[i]
         obj.y += obj.move
 
+def downHP(player):
+    pygame.mixer.Sound(downHPSound[1]).play()
+    player.HP -= 1
+
 #오브젝트 삭제
 def delObjf(obj_list, delObj_list):
     if len(delObj_list):
@@ -119,9 +138,8 @@ def delObjf(obj_list, delObj_list):
         for delObj in reversed_delObj_list:
             del obj_list[delObj]
             
-
 #오브젝트가 나가면 삭제
-def outOfObj(obj_list):
+def outOfObj(obj_list, player):
     count = 0
     delObj_list = []
     if len(obj_list):
@@ -132,6 +150,7 @@ def outOfObj(obj_list):
                 delObj_list.append(i)
                 count += 1 
     delObjf(obj_list, delObj_list)
+    if count: downHP(player)
     return count
 
 #충돌
@@ -179,14 +198,16 @@ def drawf(screen, player, m_list, obs_list, boom_list):
 #게임 오버
 def ifGameOver(screen, player):
     if player.HP <= 0:
-        font = pygame.font.Font('font\KOTRA_GOTHIC.ttf', 40)
+        font = pygame.font.Font(fontFile[1], 40)
         text = font.render("GAME OVER!", True, RED)
         screen.blit(text,(80, SCREEN_HEIGHT/2))
+        pygame.mixer.music.stop()
+        pygame.mixer.Sound(gameOverSound[1]).play()
         return True
     return False
       
 def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 20):
-    font = pygame.font.Font('font\KOTRA_GOTHIC.ttf', size)
+    font = pygame.font.Font(fontFile[1], 20)
     if count != -1: text = font.render(message + ": "+ str(count), True, color)
     else: text = font.render(message, True, color)
     screen.blit(text,(fontX,fontY))
@@ -194,6 +215,9 @@ def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 
 def main():
     # 1. 게임 초기화
     pygame.init()
+    pygame.mixer.music.load(happythemeBGM[1])
+    pygame.mixer.music.play(-1)
+    missile_Sound = pygame.mixer.Sound(laserGunSound[1])
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     global obsCount
 
@@ -236,6 +260,7 @@ def main():
 
         #스패이스바 입력시 미사일 생성
         if key_event[pygame.K_SPACE] and count % 6 == 0:
+            missile_Sound.play()
             newMissile(missile_list, missile_STR, player)
             count = 0
         
@@ -249,13 +274,13 @@ def main():
         DOWNObjf(obstacle_list)
     
         #del obj 
-        outOfObj(missile_list)
-        player.HP -= outOfObj(obstacle_list)
+        outOfObj(obstacle_list, player)
 
         #충돌시 오브젝트 파괴
         if hitObs(missile_list, obstacle_list, boom_list):  damageAmount += 1
         #플래이어 체력 감소
-        if hitPlayer(player, obstacle_list): player.HP -= 1
+        if hitPlayer(player, obstacle_list): downHP(player)
+
         # print("obs del count: ",obsCount)
         if obsCount/10:
             global obs_SPEED
@@ -273,9 +298,8 @@ def main():
         # 4-5, 업데이트
         pygame.display.flip()
     while True:
-        time.sleep(5)
+        time.sleep(3)
         break
-
 
 if __name__ == "__main__":
     main()

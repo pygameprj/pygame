@@ -13,7 +13,7 @@ M_PER = 3 # 미사일 생성 확률 퍼센트
 addressTF = 1 # 상대경로는 0, 절대 경로는 1
 
 #파일 경로
-playerFile = ["image\gfigter.png", "C:\code\pygame\image\gfigter.png"]
+playerFile = ["image\_figter.png", "C:\code\pygame\image\_figter.png"]
 missileFile = ["image\missile.png", "C:\code\pygame\image\missile.png"]
 obsFile = ["image\devil.png", "C:\code\pygame\image\devil.png"]
 boomFile = ["image\explosion.png", "C:\code\pygame\image\explosion.png"]

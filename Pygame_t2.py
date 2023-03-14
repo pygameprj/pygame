@@ -28,7 +28,6 @@ player_HP = 10
 player_SPEED = 7
 missile_SPEED = 15
 obs_HP = 4
-obs_SPEED = 2
 
 #objSize
 playerSizeX = 80
@@ -42,7 +41,6 @@ boomY = 50
 
 SCREEN_WIDTH = 400 #가로
 SCREEN_HEIGHT = 900 #세로
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 #오브젝트 클래스
 class obj:
@@ -64,7 +62,7 @@ class obj:
         self.img = pygame.transform.scale(self.img, (sx, sy))
         self.sx, self.sy = self.img.get_size()
 
-    def show(self):
+    def show(self, screen):
         screen.blit(self.img, (self.x, self.y))
 
 def initPlayer(player):
@@ -85,7 +83,7 @@ def newMissile(m_list, m_STR, player):
     missile.STR = m_STR
     m_list.append(missile)
 
-def newobs(obs_list):
+def newobs(obs_list, obs_SPEED = 2):
     if random.random() < M_PER/100:
         obstacle = obj()  # devil
         obstacle.put_img(obsFile[addressTF])
@@ -140,7 +138,7 @@ def delObjf(obj_list, delObj_list):
             del obj_list[delObj]
             
 #오브젝트가 나가면 삭제
-def outOfObj(obj_list, player):
+def outObj(obj_list, player):
     count = 0
     delObj_list = []
     if len(obj_list):
@@ -185,25 +183,84 @@ def hitPlayer(player, obs_list):
     return TF
 
 #그리기 함수
-def drawf(screen, player, m_list, obs_list, boom_list):
-    screen.fill(BLACK)
-    player.show()
+def drawInit(screenInit, state = 0):
+    screenInit.fill(BLACK)
+    # if state == 0:
+    #     writeScore(screenInit, "게임 시작", 120, 300, color = WHITE, size = 40)
+    #     writeScore(screenInit, "설정", 160, 460, color = WHITE, size = 40)
+    if state == 0:
+        writeScore(screenInit, "게임 시작", 120, 300, color = WHITE, size = 60)
+        writeScore(screenInit, "설정", 160, 460, color = WHITE, size = 40)
+    elif state == 1: 
+        writeScore(screenInit, "게임 시작", 120, 300, color = WHITE, size = 40)
+        writeScore(screenInit, "설정", 160, 460, color = WHITE, size = 60)
+    return state
+
+def initDisplay(screenInit, clock):
+    state = 0
+    while True:
+        clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit(0)
+        key_event = pygame.key.get_pressed()
+        if drawInit(screenInit, state) == 0 and (key_event[pygame.K_KP_ENTER]):
+            break
+        if key_event[pygame.K_DOWN] and state < 1:
+            state +=1
+        if key_event[pygame.K_UP] and state > 0:
+            state -= 1
+        pygame.display.flip()
+
+def drawGame(screenGame, player, m_list, obs_list, boom_list):
+    screenGame.fill(BLACK)
+    player.show(screenGame)
 
     for missile in m_list:
-        missile.show()
+        missile.show(screenGame)
     for obstacle in obs_list: 
-        obstacle.show()
+        obstacle.show(screenGame)
     for boom in boom_list:
-        boom.show()
+        boom.show(screenGame)
     delObjf(boom_list, [i for i in range(len(boom_list))])
+
+def mainKey_event(player, missile_Sound, missile_list, missile_STR, count):
+    # 4-2, 각종 입력 감지
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exit(0)
+    # print("player HP: ", player.HP, end ="\n")
+
+    #4-3키입력 움직임
+    key_event = pygame.key.get_pressed()
+    if key_event[pygame.K_LEFT]:
+        player.x -= player.move
+        if player.x <= 0:
+            player.x = 0
+
+    if key_event[pygame.K_RIGHT]:
+        player.x += player.move
+        if player.x >= SCREEN_WIDTH - player.sx:
+            player.x = SCREEN_WIDTH - player.sx
+
+    #스패이스바 입력시 미사일 생성
+    if key_event[pygame.K_SPACE] and count % 6 == 0:
+        missile_Sound.play()
+        newMissile(missile_list, missile_STR, player)
+        count = 0
+    # if key_event[pygame.K_ESCAPE]:
+
+    
 #게임 오버
-def ifGameOver(screen, player, size = 40):
+def ifGameOver(screenGame, player, size = 40):
     if player.HP <= 0:
         font = pygame.font.Font(fontFile[addressTF], size)
         text = font.render("GAME OVER!", True, RED)
-        screen.blit(text,(80, SCREEN_HEIGHT/2))
+        screenGame.blit(text,(80, SCREEN_HEIGHT/2))
         pygame.mixer.music.stop()
         pygame.mixer.Sound(gameOverSound[1]).play()
+        pygame.display.flip()
+        time.sleep(3)
         return True
     return False
       
@@ -219,8 +276,8 @@ def main():
     pygame.mixer.music.load(happythemeBGM[addressTF])
     pygame.mixer.music.play(-1)
     missile_Sound = pygame.mixer.Sound(laserGunSound[addressTF])
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    global obsCount
+    screenInit = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screenGame = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # 2. 게임창 옵션 설정
     title = "My Game"
@@ -231,76 +288,48 @@ def main():
     clock = pygame.time.Clock()
     count = 0 #미사일 지연
     damageAmount = 0 #총 딜량
-    obsCount = 0 #장애물 삭제 갯수
+    global obsCount; obsCount = 0 #장애물 삭제 갯수
     missile_STR = 1 #미사일 공격력
+    obs_SPEED = 2 # 장애물 속도
 
+    initDisplay(screenInit, clock)
     player = obj()  # SpaceShip
-    initPlayer(player) #플래이어 상태 초기화
+    initPlayer(player) #player state init
 
     # 4. 메인 이벤트
     while True:
-        # 4-1, FPS 설정
-        clock.tick(60)
-        # 4-2, 각종 입력 감지
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                exit(0)
-        # print("player HP: ", player.HP, end ="\n")
-
-        #4-3키입력 움직임
-        key_event = pygame.key.get_pressed()
-        if key_event[pygame.K_LEFT]:
-            player.x -= player.move
-            if player.x <= 0:
-                player.x = 0
-
-        if key_event[pygame.K_RIGHT]:
-            player.x += player.move
-            if player.x >= SCREEN_WIDTH - player.sx:
-                player.x = SCREEN_WIDTH - player.sx
-
-        #스패이스바 입력시 미사일 생성
-        if key_event[pygame.K_SPACE] and count % 6 == 0:
-            missile_Sound.play()
-            newMissile(missile_list, missile_STR, player)
-            count = 0
-        
         count += 1
+        # 4-1, FPS setting
+        clock.tick(60)
+        #check key_event
+        mainKey_event(player, missile_Sound, missile_list, missile_STR, count)
 
-        # 랜덤하게 생성 되는 장애물
-        newobs(obstacle_list)
+        # random new obstacle
+        if obsCount/10: obs_SPEED = 2 + obsCount/10
+        newobs(obstacle_list, obs_SPEED)
 
         #move obj
         UPObjf(missile_list)
         DOWNObjf(obstacle_list)
     
-        #del obj 
-        outOfObj(obstacle_list, player)
+        #delete obj when out
+        outObj(obstacle_list, player)
 
         #충돌시 오브젝트 파괴
         if hitObs(missile_list, obstacle_list, boom_list):  damageAmount += 1
-        #플래이어 체력 감소
+
+        #if player when hit, down HP
         if hitPlayer(player, obstacle_list): downHP(player)
 
-        # print("obs del count: ",obsCount)
-        if obsCount/10:
-            global obs_SPEED
-            obs_SPEED = 2 + obsCount/10
+        # 4-4, draw Display
+        drawGame(screenGame, player, missile_list, obstacle_list, boom_list)
+        writeScore(screenGame, "총 딜량", 10, 0, count = damageAmount)
+        writeScore(screenGame, "처리한 악마 수", 10, 20, count = obsCount)
+        writeScore(screenGame, "player HP", SCREEN_WIDTH-140, 00, count = player.HP, color =  GREEN)
+        if ifGameOver(screenGame, player): break
 
-        # 4-4, 그리기 
-        drawf(screen, player, missile_list, obstacle_list, boom_list)
-        writeScore(screen, "총 딜량", 10, 0, count = damageAmount)
-        writeScore(screen, "처리한 악마 수", 10, 20, count = obsCount)
-        writeScore(screen, "player HP", SCREEN_WIDTH-140, 00, count = player.HP, color =  GREEN)
-        if ifGameOver(screen, player):
-            pygame.display.flip()
-            break
-
-        # 4-5, 업데이트
+        # 4-5, Display update
         pygame.display.flip()
-    while True:
-        time.sleep(3)
-        break
 
 if __name__ == "__main__":
     main()

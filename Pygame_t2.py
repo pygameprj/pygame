@@ -102,6 +102,7 @@ def makeBoom(boom_list, obj_list, delObj_list):
         boom.change_size(boomX, boomY)
         boom.x = obj_list[delObj_list[i]].x
         boom.y = obj_list[delObj_list[i]].y
+        boom.HP = 20 # 폭발 이펙트 지속 시간, 약 0.3초
         boom_list.append(boom)
         # pygame.mixer.music.stop()
         pygame.mixer.Sound(boomSoundFile[addressTF]).play()
@@ -132,9 +133,8 @@ def downHP(player):
 def delObjf(obj_list, delObj_list):
     if len(delObj_list):
         # print("del list: ", delObj_list)
-
-        reversed_delObj_list = delObj_list[::-1]    #역순으로 읽어야 버그 안 터짐
-        for delObj in reversed_delObj_list:
+        delObj_list.sort(reverse=True)    #역순으로 읽어야 버그 안 터짐
+        for delObj in delObj_list:
             del obj_list[delObj]
             
 #오브젝트가 나가면 삭제
@@ -215,14 +215,20 @@ def initDisplay(screenInit, clock):
 def drawGame(screenGame, player, m_list, obs_list, boom_list):
     screenGame.fill(BLACK)
     player.show(screenGame)
+    delBoom_list = []
 
     for missile in m_list:
         missile.show(screenGame)
     for obstacle in obs_list: 
         obstacle.show(screenGame)
-    for boom in boom_list:
-        boom.show(screenGame)
-    delObjf(boom_list, [i for i in range(len(boom_list))])
+
+    for i in range(len(boom_list)):
+        boom_list[i].HP -= 1
+        if boom_list[i].HP > 0:
+            boom_list[i].show(screenGame)
+        elif boom_list[i] not in boom_list: delBoom_list.append(boom_list[i])
+
+    delObjf(delBoom_list, [i for i in range(len(delBoom_list))])
 
 def mainKey_event(player, missile_Sound, missile_list, missile_STR, count):
     # 4-2, 각종 입력 감지
@@ -249,8 +255,7 @@ def mainKey_event(player, missile_Sound, missile_list, missile_STR, count):
         newMissile(missile_list, missile_STR, player)
         count = 0
     # if key_event[pygame.K_ESCAPE]:
-
-    
+  
 #게임 오버
 def ifGameOver(screenGame, player, size = 40):
     if player.HP <= 0:
@@ -258,7 +263,7 @@ def ifGameOver(screenGame, player, size = 40):
         text = font.render("GAME OVER!", True, RED)
         screenGame.blit(text,(80, SCREEN_HEIGHT/2))
         pygame.mixer.music.stop()
-        pygame.mixer.Sound(gameOverSound[1]).play()
+        pygame.mixer.Sound(gameOverSound[addressTF]).play()
         pygame.display.flip()
         time.sleep(3)
         return True
@@ -271,7 +276,7 @@ def writeScore(screen, message, fontX, fontY, count = -1, color = WHITE, size = 
     screen.blit(text,(fontX,fontY))
 
 def main():
-    # 1. 게임 초기화
+    # 1. init game
     pygame.init()
     pygame.mixer.music.load(happythemeBGM[addressTF])
     pygame.mixer.music.play(-1)
@@ -292,7 +297,7 @@ def main():
     missile_STR = 1 #미사일 공격력
     obs_SPEED = 2 # 장애물 속도
 
-    initDisplay(screenInit, clock)
+    initDisplay(screenInit, clock) #Init display
     player = obj()  # SpaceShip
     initPlayer(player) #player state init
 
@@ -327,7 +332,7 @@ def main():
         writeScore(screenGame, "처리한 악마 수", 10, 20, count = obsCount)
         writeScore(screenGame, "player HP", SCREEN_WIDTH-140, 00, count = player.HP, color =  GREEN)
         if ifGameOver(screenGame, player): break
-
+        
         # 4-5, Display update
         pygame.display.flip()
 

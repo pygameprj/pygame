@@ -68,7 +68,10 @@ class initVar:
         self.boomY = 50
 
         self.obsCount = 0
+        self.damageAmount = 0
         self.m_STR = 1
+        self.missile_STR = 1
+
 def initPlayer(player, init_var):
     player.put_img(playerFile[addressTF])
     player.change_size(init_var.playerSizeX, init_var.playerSizeY)
@@ -169,8 +172,7 @@ def hitObs(m_list, obs_list, boom_list, init_var):
                 if obs_list[j].HP <= 0 and j not in delObs_list: delObs_list.append(j)
                 TF = True
     makeBoom(boom_list, obs_list, delObs_list, init_var)
-    global obsCount
-    obsCount += len(delObs_list)
+    init_var.obsCount += len(delObs_list)
     delObjf(obs_list, delObs_list)
     delObjf(m_list, delM_list)
     
@@ -273,7 +275,7 @@ def drawGame(screen, player, m_list, obs_list, boom_list):
 
     delObjf(delBoom_list, [i for i in range(len(delBoom_list))])
 
-def mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list, missile_STR, count, screen, clock, init_var):
+def mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list, count, screen, clock, init_var):
     # 4-2, 각종 입력 감지
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -302,7 +304,8 @@ def mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list,
         time.sleep(0.2)
         if stopDisplay(screen, clock):
             initDisplay(screen, clock) #Init display
-            missile_list.clear(), obstacle_list.clear(), boom_list.clear(); global damageAmount; damageAmount = 0
+            missile_list.clear(), obstacle_list.clear(), boom_list.clear()
+            init_var.damageAmount = 0
             initPlayer(player, init_var) #player state init
         pygame.mixer.music.load(happythemeBGM[addressTF])
         pygame.mixer.music.play(-1)
@@ -344,9 +347,6 @@ def main():
     missile_list = []; obstacle_list = []; boom_list = []
     clock = pygame.time.Clock()
     count = 0 #미사일 지연
-    damageAmount = 0 #총 딜량
-    global obsCount; obsCount = 0 #장애물 삭제 갯수
-    missile_STR = 1 #미사일 공격력
     obs_SPEED = 2 # 장애물 속도
 
 
@@ -360,10 +360,10 @@ def main():
         # 4-1, FPS setting
         clock.tick(60)
         #check key_event
-        mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list, missile_STR, count, screen, clock, init_var)
+        mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list, count, screen, clock, init_var)
 
         # random new obstacle
-        if obsCount/10: obs_SPEED = 2 + obsCount/10
+        if init_var.obsCount/10: obs_SPEED = 2 + init_var.obsCount/10
         newobs(obstacle_list, init_var, obs_SPEED)
 
         #move obj
@@ -374,15 +374,15 @@ def main():
         outObj(obstacle_list, player)
 
         #충돌시 오브젝트 파괴
-        if hitObs(missile_list, obstacle_list, boom_list, init_var):  damageAmount += 1
+        if hitObs(missile_list, obstacle_list, boom_list, init_var):  init_var.damageAmount += 1
 
         #if player when hit, down HP
         if hitPlayer(player, obstacle_list, init_var): downHP(player)
 
         # 4-4, draw Display
         drawGame(screen, player, missile_list, obstacle_list, boom_list)
-        writeScore(screen, "총 딜량", 10, 0, count = damageAmount)
-        writeScore(screen, "처리한 악마 수", 10, 20, count = obsCount)
+        writeScore(screen, "총 딜량", 10, 0, count = init_var.damageAmount)
+        writeScore(screen, "처리한 악마 수", 10, 20, count = init_var.obsCount)
         writeScore(screen, "player HP", SCREEN_WIDTH-140, 00, count = player.HP, color =  GREEN)
         if ifGameOver(screen, player): break
         

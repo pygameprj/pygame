@@ -9,10 +9,10 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0,255, 0)
 RED = (255, 0, 0)
-addressTF = 1 # 상대경로는 0, 절대 경로는 1
+addressTF = 0 # 상대경로는 0, 절대 경로는 1
 
 #파일 경로
-fontFile = ['font\KOTRA_GOTHIC.ttf', 'C:\code\pygame\_font\KOTRA_GOTHIC.ttf']
+fontFile = ['_font\KOTRA_GOTHIC.ttf', 'C:\code\pygame\_font\KOTRA_GOTHIC.ttf']
 playerFile = ["image\_figter.png", "C:\code\pygame\image\_figter.png"]
 missileFile = ["image\missile.png", "C:\code\pygame\image\missile.png"]
 obsFile = ["image\devil.png", "C:\code\pygame\image\devil.png"]

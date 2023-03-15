@@ -9,7 +9,6 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0,255, 0)
 RED = (255, 0, 0)
-M_PER = 3 # 미사일 생성 확률 퍼센트
 addressTF = 1 # 상대경로는 0, 절대 경로는 1
 
 #파일 경로
@@ -52,6 +51,10 @@ class obj:
 
 class initVar:
     def __init__(self):
+        self.missile_list = []
+        self.obstacle_list = []
+        self.boomissile_list = []
+
         self.player_HP = 10
         self.player_SPEED = 7
         self.missile_SPEED = 15
@@ -71,8 +74,11 @@ class initVar:
         self.damageAmount = 0
         self.m_STR = 1
         self.missile_STR = 1
-
-def initPlayer(player, init_var):
+        self.M_PER = 3 # 미사일 생성 확률 퍼센트
+        self.obs_SPEED = 2
+        
+def initPlayer(player):
+    init_var = initVar()
     player.put_img(playerFile[addressTF])
     player.change_size(init_var.playerSizeX, init_var.playerSizeY)
     player.x = round((SCREEN_WIDTH - player.sx)/2)
@@ -80,7 +86,7 @@ def initPlayer(player, init_var):
     player.move = init_var.player_SPEED
     player.HP = init_var.player_HP
 
-def newMissile(m_list, init_var, player):
+def newMissile(init_var, player):
     missile = obj()  # missile
     missile.put_img(missileFile[addressTF])
     missile.change_size(init_var.missileSizeX, init_var.missileSizeY)
@@ -88,29 +94,29 @@ def newMissile(m_list, init_var, player):
     missile.y = player.y - missile.y
     missile.move = init_var.missile_SPEED
     missile.STR = init_var.m_STR
-    m_list.append(missile)
+    init_var.missile_list.append(missile)
 
-def newobs(obs_list, init_var, obs_SPEED = 2):
-    if random.random() < M_PER/100:
+def newobs(state_var):
+    if random.random() < state_var.M_PER/100:
         obstacle = obj()  # devil
         obstacle.put_img(obsFile[addressTF])
-        obstacle.change_size(init_var.obsSizeX, init_var.obsSizeY)
+        obstacle.change_size(state_var.obsSizeX, state_var.obsSizeY)
         obstacle.x = random.randrange(0, SCREEN_WIDTH - obstacle.sx)
         obstacle.y = 10 + 40
-        obstacle.move = obs_SPEED
-        obstacle.HP = init_var.obs_HP
-        obs_list.append(obstacle)
+        obstacle.move = state_var.obs_SPEED
+        obstacle.HP = state_var.obs_HP
+        state_var.obstacle_list.append(obstacle)
 
-def makeBoom(boom_list, obj_list, delObj_list, init_var):
+def makeBoom(delObj_list, state_var): 
     for i in range(len(delObj_list)):
-        obj_list[delObj_list[i]]
+        state_var.obstacle_list[delObj_list[i]]
         boom = obj()
         boom.put_img(boomFile[addressTF])
-        boom.change_size(init_var.boomX, init_var.boomY)
-        boom.x = obj_list[delObj_list[i]].x
-        boom.y = obj_list[delObj_list[i]].y
+        boom.change_size(state_var.boomX, state_var.boomY)
+        boom.x = state_var.obstacle_list[delObj_list[i]].x
+        boom.y = state_var.obstacle_list[delObj_list[i]].y
         boom.HP = 20 # 폭발 이펙트 지속 시간, 약 0.3초
-        boom_list.append(boom)
+        state_var.boomissile_list.append(boom)
         # pygame.mixer.music.stop()
         pygame.mixer.Sound(boomSoundFile[addressTF]).play()
         # pygame.mixer.music.play(-1)
@@ -160,32 +166,32 @@ def outObj(obj_list, player):
     return count
 
 #충돌
-def hitObs(m_list, obs_list, boom_list, init_var):
+def hitObs(state_var):
     TF = False
-    delObs_list = []; delM_list = []
+    delobstacle_list = []; delmissile_list = []
 
-    for i in range(len(m_list)):
-        for j in range(len(obs_list)):
-            if oLap(m_list[i], obs_list[j]):
-                m_list[i].HP -= 1; obs_list[j].HP -= 1
-                if  m_list[i].HP <= 0 and i not in delM_list: delM_list.append(i) 
-                if obs_list[j].HP <= 0 and j not in delObs_list: delObs_list.append(j)
+    for i in range(len(state_var.missile_list)):
+        for j in range(len(state_var.obstacle_list)):
+            if oLap(state_var.missile_list[i], state_var.obstacle_list[j]):
+                state_var.missile_list[i].HP -= 1; state_var.obstacle_list[j].HP -= 1
+                if  state_var.missile_list[i].HP <= 0 and i not in delmissile_list: delmissile_list.append(i) 
+                if state_var.obstacle_list[j].HP <= 0 and j not in delobstacle_list: delobstacle_list.append(j)
                 TF = True
-    makeBoom(boom_list, obs_list, delObs_list, init_var)
-    init_var.obsCount += len(delObs_list)
-    delObjf(obs_list, delObs_list)
-    delObjf(m_list, delM_list)
+    makeBoom(delobstacle_list, state_var)
+    state_var.obsCount += len(delobstacle_list)
+    delObjf(state_var.obstacle_list, delobstacle_list)
+    delObjf(state_var.missile_list, delmissile_list)
     
     return TF
 
-def hitPlayer(player, obs_list, init_var):
-    TF = False; delObs_list = []
-    for j in range(len(obs_list)):
-        if oLap(obs_list[j], player):
-            obs_list[j].HP -= init_var.obs_HP
-            if obs_list[j].HP <= 0 and j not in delObs_list: delObs_list.append(j)
+def hitPlayer(player, state_var):
+    TF = False; delobstacle_list = []
+    for j in range(len(state_var.obstacle_list)):
+        if oLap(state_var.obstacle_list[j], player):
+            state_var.obstacle_list[j].HP -= state_var.obs_HP
+            if state_var.obstacle_list[j].HP <= 0 and j not in delobstacle_list: delobstacle_list.append(j)
             TF = True
-    delObjf(obs_list, delObs_list)
+    delObjf(state_var.obstacle_list, delobstacle_list)
     return TF
 
 #그리기 함수
@@ -195,24 +201,33 @@ def drawInit(screen, state = 0):
     #     writeScore(screen, "게임 시작", 120, 300, color = WHITE, size = 40)
     #     writeScore(screen, "설정", 160, 460, color = WHITE, size = 40)
     if state == 0:
-        writeScore(screen, "게임 시작", 120, 300, color = WHITE, size = 60)
+        writeScore(screen, "게임 시작", 140, 300, color = WHITE, size = 60)
         writeScore(screen, "설정", 160, 460, color = WHITE, size = 40)
+        writeScore(screen, "게임 종료", 140, 620, color = WHITE, size = 40)
     elif state == 1: 
-        writeScore(screen, "게임 시작", 120, 300, color = WHITE, size = 40)
+        writeScore(screen, "게임 시작", 140, 300, color = WHITE, size = 40)
         writeScore(screen, "설정", 160, 460, color = WHITE, size = 60)
+        writeScore(screen, "게임 종료", 140, 620, color = WHITE, size = 40)
+    elif state == 2: 
+        writeScore(screen, "게임 시작", 140, 300, color = WHITE, size = 40)
+        writeScore(screen, "설정", 160, 460, color = WHITE, size = 40)
+        writeScore(screen, "게임 종료", 140, 620, color = WHITE, size = 60)
     return state
 
 def drawStop(screen, state = 0):
     screen.fill(BLACK)
     if state == 0:
+        writeScore(screen, "일시 정지", 150, 100, color = WHITE, size = 35)
         writeScore(screen, "게임 재개", 120, 300, color = WHITE, size = 60)
         writeScore(screen, "처음 으로", 140, 460, color = WHITE, size = 40)
         writeScore(screen, "게임 종료", 140, 620, color = WHITE, size = 40)
     elif state == 1:
+        writeScore(screen, "일시 정지", 150, 100, color = WHITE, size = 35)
         writeScore(screen, "게임 재개", 120, 300, color = WHITE, size = 40)
         writeScore(screen, "처음 으로", 140, 460, color = WHITE, size = 60)
         writeScore(screen, "게임 종료", 140, 620, color = WHITE, size = 40)
     elif state == 2:
+        writeScore(screen, "일시 정지", 150, 100, color = WHITE, size = 35)
         writeScore(screen, "게임 재개", 120, 300, color = WHITE, size = 40)
         writeScore(screen, "처음 으로", 140, 460, color = WHITE, size = 40)
         writeScore(screen, "게임 종료", 140, 620, color = WHITE, size = 60)
@@ -229,10 +244,14 @@ def initDisplay(screen, clock):
         key_event = pygame.key.get_pressed()
         if drawInit(screen, state) == 0 and (key_event[pygame.K_KP_ENTER]):
             break
-        if key_event[pygame.K_DOWN] and state < 1:
+        elif drawInit(screen, state) == 2 and (key_event[pygame.K_KP_ENTER]):
+            exit(0)
+        if key_event[pygame.K_DOWN] and state < 2:
             state +=1
+            time.sleep(0.2)
         if key_event[pygame.K_UP] and state > 0:
             state -= 1
+            time.sleep(0.2)
         pygame.display.flip()
 
 def stopDisplay(screen, clock):
@@ -257,25 +276,25 @@ def stopDisplay(screen, clock):
             time.sleep(0.2)
         pygame.display.flip()
 
-def drawGame(screen, player, m_list, obs_list, boom_list):
+def drawGame(screen, player, state_var):
     screen.fill(BLACK)
     player.show(screen)
-    delBoom_list = []
+    delBoomissile_list = []
 
-    for missile in m_list:
+    for missile in state_var.missile_list:
         missile.show(screen)
-    for obstacle in obs_list: 
+    for obstacle in state_var.obstacle_list: 
         obstacle.show(screen)
 
-    for i in range(len(boom_list)):
-        boom_list[i].HP -= 1
-        if boom_list[i].HP > 0:
-            boom_list[i].show(screen)
-        elif boom_list[i] not in boom_list: delBoom_list.append(boom_list[i])
+    for i in range(len(state_var.boomissile_list)):
+        state_var.boomissile_list[i].HP -= 1
+        if state_var.boomissile_list[i].HP > 0:
+            state_var.boomissile_list[i].show(screen)
+        elif state_var.boomissile_list[i] not in state_var.boomissile_list: delBoomissile_list.append(state_var.boomissile_list[i])
 
-    delObjf(delBoom_list, [i for i in range(len(delBoom_list))])
+    delObjf(delBoomissile_list, [i for i in range(len(delBoomissile_list))])
 
-def mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list, count, screen, clock, init_var):
+def mainKey_event(player, missile_Sound, count, screen, clock, state_var):
     # 4-2, 각종 입력 감지
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -297,16 +316,18 @@ def mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list,
     #스패이스바 입력시 미사일 생성
     if key_event[pygame.K_SPACE] and count % 6 == 0:
         missile_Sound.play()
-        newMissile(missile_list, init_var, player)
+        newMissile(state_var, player)
         count = 0
     if key_event[pygame.K_ESCAPE]:
         pygame.mixer.music.stop()
         time.sleep(0.2)
         if stopDisplay(screen, clock):
             initDisplay(screen, clock) #Init display
-            missile_list.clear(), obstacle_list.clear(), boom_list.clear()
-            init_var.damageAmount = 0
-            initPlayer(player, init_var) #player state init
+            init_var = initVar()
+            state_var.missile_list.clear(), state_var.obstacle_list.clear(), state_var.boomissile_list.clear()
+            state_var.damageAmount = init_var.damageAmount
+            state_var.obsCount = init_var.obsCount
+            initPlayer(player) #player state init
         pygame.mixer.music.load(happythemeBGM[addressTF])
         pygame.mixer.music.play(-1)
 
@@ -336,23 +357,19 @@ def main():
     pygame.mixer.music.play(-1)
     missile_Sound = pygame.mixer.Sound(laserGunSound[addressTF])
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    init_var = initVar()
-
+    state_var = initVar()
 
     # 2. 게임창 옵션 설정
     title = "My Game"
     pygame.display.set_caption(title)
 
     # 3. 게임내 필요한 설정
-    missile_list = []; obstacle_list = []; boom_list = []
     clock = pygame.time.Clock()
     count = 0 #미사일 지연
-    obs_SPEED = 2 # 장애물 속도
-
 
     initDisplay(screen, clock) #Init display
     player = obj()  # SpaceShip
-    initPlayer(player, init_var) #player state init
+    initPlayer(player) #player state init
 
     # 4. 메인 이벤트
     while True:
@@ -360,29 +377,29 @@ def main():
         # 4-1, FPS setting
         clock.tick(60)
         #check key_event
-        mainKey_event(player, missile_Sound, missile_list, obstacle_list, boom_list, count, screen, clock, init_var)
+        mainKey_event(player, missile_Sound, count, screen, clock, state_var)
 
         # random new obstacle
-        if init_var.obsCount/10: obs_SPEED = 2 + init_var.obsCount/10
-        newobs(obstacle_list, init_var, obs_SPEED)
+        if state_var.obsCount/10: state_var.obs_SPEED = 2 + state_var.obsCount/10
+        newobs(state_var)
 
         #move obj
-        UPObjf(missile_list)
-        DOWNObjf(obstacle_list)
+        UPObjf(state_var.missile_list)
+        DOWNObjf(state_var.obstacle_list)
     
         #delete obj when out
-        outObj(obstacle_list, player)
+        outObj(state_var.obstacle_list, player)
 
         #충돌시 오브젝트 파괴
-        if hitObs(missile_list, obstacle_list, boom_list, init_var):  init_var.damageAmount += 1
+        if hitObs(state_var):  state_var.damageAmount += 1
 
         #if player when hit, down HP
-        if hitPlayer(player, obstacle_list, init_var): downHP(player)
+        if hitPlayer(player, state_var): downHP(player)
 
         # 4-4, draw Display
-        drawGame(screen, player, missile_list, obstacle_list, boom_list)
-        writeScore(screen, "총 딜량", 10, 0, count = init_var.damageAmount)
-        writeScore(screen, "처리한 악마 수", 10, 20, count = init_var.obsCount)
+        drawGame(screen, player, state_var)
+        writeScore(screen, "총 딜량", 10, 0, count = state_var.damageAmount)
+        writeScore(screen, "처리한 악마 수", 10, 20, count = state_var.obsCount)
         writeScore(screen, "player HP", SCREEN_WIDTH-140, 00, count = player.HP, color =  GREEN)
         if ifGameOver(screen, player): break
         

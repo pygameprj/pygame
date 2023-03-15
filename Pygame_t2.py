@@ -263,8 +263,10 @@ def stopDisplay(screen, clock):
                 exit(0)
         key_event = pygame.key.get_pressed()
         if drawStop(screen, state) == 0 and key_event[pygame.K_KP_ENTER] or key_event[pygame.K_ESCAPE]:
+            time.sleep(0.2)
             return 0
         elif drawStop(screen, state) == 1 and (key_event[pygame.K_KP_ENTER]):
+            time.sleep(0.2)
             return 1
         elif drawStop(screen, state) == 2 and (key_event[pygame.K_KP_ENTER]):
             exit(0)
@@ -322,14 +324,17 @@ def mainKey_event(player, missile_Sound, count, screen, clock, state_var):
         pygame.mixer.music.stop()
         time.sleep(0.2)
         if stopDisplay(screen, clock):
+            pygame.mixer.music.load(happythemeBGM[addressTF])
+            pygame.mixer.music.play(-1)
             initDisplay(screen, clock) #Init display
             init_var = initVar()
             state_var.missile_list.clear(), state_var.obstacle_list.clear(), state_var.boomissile_list.clear()
             state_var.damageAmount = init_var.damageAmount
             state_var.obsCount = init_var.obsCount
             initPlayer(player) #player state init
-        pygame.mixer.music.load(happythemeBGM[addressTF])
-        pygame.mixer.music.play(-1)
+        else:
+            pygame.mixer.music.load(happythemeBGM[addressTF])
+            pygame.mixer.music.play(-1)
 
 #게임 오버
 def ifGameOver(screen, player, size = 40):

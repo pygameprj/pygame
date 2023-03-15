@@ -151,7 +151,7 @@ Directions = [Direction() for i in range(0, 10)]
 #타겟 박스
 targetArea = Rect(SCREEN_WIDTH/2, 400, SCREEN_WIDTH/2, 80)
 #결과 이모티콘
-resultFileNames = ["image\gnormal.png", "image\good.png", "image\gbad.png"]
+resultFileNames = ["image\_normal.png", "image\good.png", "image\_bad.png"]
 resultImg = []
 for i, name in enumerate(resultFileNames):
     resultImg.append(pygame.image.load(name))
